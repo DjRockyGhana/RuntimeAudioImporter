@@ -34,34 +34,91 @@ void URuntimeAudioTranscoder::TranscodeRAWDataFromBuffer(TArray64<uint8> RAWData
 		});
 	};
 
-	TArray64<uint8> RAWDataTo;
+	TArray64<uint8> IntermediateRAWBuffer;
 
+	// Transcoding of all formats to unsigned 8-bit PCM format (intermediate)
 	switch (RAWFormatFrom)
 	{
 	case ERuntimeRAWAudioFormat::Int8:
-		TranscodeTo<int8>(RAWFormatTo, RAWDataFrom, RAWDataTo);
-		break;
+		{
+			FRAW_RuntimeCodec::TranscodeRAWData<int8, uint8>(RAWDataFrom, IntermediateRAWBuffer);
+			break;
+		}
 	case ERuntimeRAWAudioFormat::UInt8:
-		TranscodeTo<uint8>(RAWFormatTo, RAWDataFrom, RAWDataTo);
-		break;
+		{
+			IntermediateRAWBuffer = MoveTemp(RAWDataFrom);
+			break;
+		}
 	case ERuntimeRAWAudioFormat::Int16:
-		TranscodeTo<int16>(RAWFormatTo, RAWDataFrom, RAWDataTo);
-		break;
+		{
+			FRAW_RuntimeCodec::TranscodeRAWData<int16, uint8>(RAWDataFrom, IntermediateRAWBuffer);
+			break;
+		}
 	case ERuntimeRAWAudioFormat::UInt16:
-		TranscodeTo<uint16>(RAWFormatTo, RAWDataFrom, RAWDataTo);
-		break;
+		{
+			FRAW_RuntimeCodec::TranscodeRAWData<uint16, uint8>(RAWDataFrom, IntermediateRAWBuffer);
+			break;
+		}
 	case ERuntimeRAWAudioFormat::Int32:
-		TranscodeTo<int32>(RAWFormatTo, RAWDataFrom, RAWDataTo);
-		break;
+		{
+			FRAW_RuntimeCodec::TranscodeRAWData<int32, uint8>(RAWDataFrom, IntermediateRAWBuffer);
+			break;
+		}
 	case ERuntimeRAWAudioFormat::UInt32:
-		TranscodeTo<uint32>(RAWFormatTo, RAWDataFrom, RAWDataTo);
-		break;
+		{
+			FRAW_RuntimeCodec::TranscodeRAWData<uint32, uint8>(RAWDataFrom, IntermediateRAWBuffer);
+			break;
+		}
 	case ERuntimeRAWAudioFormat::Float32:
-		TranscodeTo<float>(RAWFormatTo, RAWDataFrom, RAWDataTo);
-		break;
+		{
+			FRAW_RuntimeCodec::TranscodeRAWData<float, uint8>(RAWDataFrom, IntermediateRAWBuffer);
+			break;
+		}
 	}
 
-	ExecuteResult(true, MoveTemp(RAWDataTo));
+	TArray64<uint8> RAWData_To;
+
+	// Transcoding unsigned 8-bit PCM to the specified format
+	switch (RAWFormatTo)
+	{
+	case ERuntimeRAWAudioFormat::Int8:
+		{
+			FRAW_RuntimeCodec::TranscodeRAWData<uint8, int8>(IntermediateRAWBuffer, RAWData_To);
+			break;
+		}
+	case ERuntimeRAWAudioFormat::UInt8:
+		{
+			RAWData_To = MoveTemp(IntermediateRAWBuffer);
+			break;
+		}
+	case ERuntimeRAWAudioFormat::Int16:
+		{
+			FRAW_RuntimeCodec::TranscodeRAWData<uint8, int16>(IntermediateRAWBuffer, RAWData_To);
+			break;
+		}
+	case ERuntimeRAWAudioFormat::UInt16:
+		{
+			FRAW_RuntimeCodec::TranscodeRAWData<uint8, uint16>(IntermediateRAWBuffer, RAWData_To);
+			break;
+		}
+	case ERuntimeRAWAudioFormat::Int32:
+		{
+			FRAW_RuntimeCodec::TranscodeRAWData<uint8, int32>(IntermediateRAWBuffer, RAWData_To);
+			break;
+		}
+	case ERuntimeRAWAudioFormat::UInt32:
+		{
+			FRAW_RuntimeCodec::TranscodeRAWData<uint8, uint32>(IntermediateRAWBuffer, RAWData_To);
+			break;
+		}
+	case ERuntimeRAWAudioFormat::Float32:
+		{
+			FRAW_RuntimeCodec::TranscodeRAWData<uint8, float>(IntermediateRAWBuffer, RAWData_To);
+			break;
+		}
+	}
+
+	ExecuteResult(true, MoveTemp(RAWData_To));
 }
 
 void URuntimeAudioTranscoder::TranscodeRAWDataFromFile(const FString& FilePathFrom, ERuntimeRAWAudioFormat RAWFormatFrom, const FString& FilePathTo, ERuntimeRAWAudioFormat RAWFormatTo, const FOnRAWDataTranscodeFromFileResult& Result)
